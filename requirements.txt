@@ -1,0 +1,8 @@
+python-dotenv
+playwright
+langgraph
+pydantic
+pandas
+rich
+requests
+beautifulsoup4
