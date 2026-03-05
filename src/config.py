@@ -8,7 +8,7 @@ load_dotenv()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
 
-HEADLESS = os.getenv("HEADLESS", "true").lower() in {"1", "true", "yes"}
+HEADLESS = os.getenv("HEADLESS", "false").lower() in {"1", "true", "yes"}
 BROWSER_TIMEOUT_MS = int(os.getenv("BROWSER_TIMEOUT_MS", "30000"))
 
 OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "outputs"))

@@ -1,6 +1,11 @@
 # AIBrowserAgent
 The objective of this project is to design and implement a structured AI agent that can interpret natural language instructions, launch a browser session, and execute step-by-step actions while explaining its reasoning to accomplish a given tasks.
 
+## Requirements
+
+- Python 3.11+ (3.11 or 3.12 recommended)
+- pip and a virtual environment (e.g. `venv` or `conda`)
+
 ## Natural language entry (--prompt / run-hitl)
 
 You can give a **sentence** instead of a raw URL; the agent uses an LLM to resolve it to a URL, then browses and summarizes.

@@ -6,8 +6,32 @@ from pathlib import Path
 from langgraph.types import Command
 
 from src.agent_graph import build_graph, build_graph_hitl
-from src.browser import fetch_page_with_action
+from src.browser import (
+    chat_click,
+    chat_close_popup,
+    chat_close_search,
+    chat_cookie_consent,
+    chat_go_back,
+    chat_hover_by_description,
+    chat_navigate,
+    chat_search_on_page,
+    fetch_page_with_action,
+    run_nl_search,
+)
 from src.evaluate_headless import run_headless_evaluation
+from src.nl_intent import (
+    ClickIntent,
+    ClosePopupIntent,
+    CloseSearchIntent,
+    CookieConsentIntent,
+    ExitIntent,
+    GoBackIntent,
+    HoverIntent,
+    NavigateIntent,
+    SearchOnPageIntent,
+    parse_nl_intent,
+    parse_search_intent,
+)
 from src.generate_headless_doc import generate_headless_doc
 from src.logger import jsonl_path, append_jsonl, utc_ts
 from src.prompt_to_url import parse_prompt_to_url, looks_like_url
@@ -53,6 +77,13 @@ def parse_args():
     action_parser.add_argument("--fill", default=None, metavar="SELECTOR", help="CSS selector of input to fill (use with --fill-value)")
     action_parser.add_argument("--fill-value", default=None, help="Value to type into the element given by --fill")
     action_parser.add_argument("--submit", action="store_true", help="After --fill, press Enter to submit (e.g. search)")
+    action_parser.add_argument("--headful", action="store_true", help="Run browser with visible window (headful) instead of headless")
+
+    nl_parser = subparsers.add_parser(
+        "run-nl",
+        help="Natural language chat: first instruction (e.g. go to Stanley); then keeps asking for next step until you say exit. Screenshots: red box when targeting search box, and after each action.",
+    )
+    nl_parser.add_argument("--prompt", "-p", required=True, help="First instruction, e.g. 'go to Stanley' or 'search owala'. Then type next step instructions until 'exit'")
 
     return parser.parse_args()
 
@@ -123,9 +154,11 @@ async def run_demo_action(
     fill_value: str | None,
     submit_after_fill: bool = False,
     open_search_selector: str | None = None,
+    headful: bool = False,
 ) -> None:
     """
-    Headless: load URL, perform one click or one fill, then confirm (screenshot + log).
+    Load URL, optionally perform one click or one fill, then confirm (screenshot + log).
+    With no --click or --fill, just loads the page and saves screenshot + annotated bbox image.
     If open_search_selector, click it first to open search bar, then fill.
     If submit_after_fill, after filling we press Enter to submit (e.g. search).
     """
@@ -133,8 +166,6 @@ async def run_demo_action(
         raise SystemExit("Use either --click or --fill/--fill-value, not both.")
     if fill_selector and fill_value is None:
         raise SystemExit("--fill requires --fill-value.")
-    if not click_selector and not fill_selector:
-        raise SystemExit("Provide --click SELECTOR or --fill SELECTOR and --fill-value VALUE.")
     if submit_after_fill and not fill_selector:
         raise SystemExit("--submit can only be used with --fill and --fill-value.")
     if open_search_selector and not fill_selector:
@@ -147,6 +178,7 @@ async def run_demo_action(
         fill_value=fill_value,
         submit_after_fill=submit_after_fill,
         open_search_selector=open_search_selector,
+        headless=not headful,
     )
 
     # Log to JSONL (action log)
@@ -179,8 +211,134 @@ async def run_demo_action(
         print("Success:", confirmation.success)
         print("Message:", confirmation.message)
     print("Screenshot:", page_result.screenshot_path)
+    if page_result.annotated_screenshot_path:
+        print("Annotated (bboxes):", page_result.annotated_screenshot_path)
     print("Log:", str(action_log))
     print("================================\n")
+
+
+async def run_nl(prompt: str) -> None:
+    """Single-shot: parse search intent, open URL, red box, type, submit, exit."""
+    intent = parse_search_intent(prompt)
+    if not intent:
+        raise SystemExit("Could not parse your request. Try e.g. 'search owala on google'.")
+    print("Parsed:", intent.url, "| query:", intent.query)
+    result = await run_nl_search(
+        url=intent.url,
+        fill_selector=intent.fill_selector,
+        fill_value=intent.query,
+        submit=intent.submit,
+    )
+    print("\n=== RESULT ===")
+    print("URL:", result.final_url)
+    print("Title:", result.title)
+    print("Screenshot:", result.screenshot_path)
+    print("================\n")
+
+
+async def run_nl_chat(initial_prompt: str) -> None:
+    """
+    Conversation loop: one browser session, keep asking for next step until user says exit.
+    - "go to Stanley" -> go to that URL (resolve with LLM), screenshot when done.
+    - "search X" -> red box on search box, screenshot (redbox), type & submit, screenshot (done).
+    - "click the Nth link" -> click, screenshot (done).
+    - "exit" -> close browser.
+    """
+    from playwright.async_api import async_playwright
+
+    from src.config import BROWSER_TIMEOUT_MS
+
+    step = 0
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=False)
+        context = await browser.new_context(viewport={"width": 1280, "height": 720})
+        page = await context.new_page()
+        page.set_default_timeout(BROWSER_TIMEOUT_MS)
+
+        try:
+            prompt = initial_prompt.strip()
+            while True:
+                if not prompt:
+                    prompt = input("\nWhat next? (type exit to leave)\n> ").strip()
+                    if not prompt:
+                        continue
+                step += 1
+                prefix = f"nl_step_{step}"
+
+                intent = parse_nl_intent(prompt)
+                if intent is None:
+                    print("Could not parse. Try e.g.: go to Stanley, search owala, hover Solutions, click Repair, exit")
+                    prompt = ""
+                    continue
+                if isinstance(intent, ExitIntent):
+                    print("Exiting.")
+                    break
+
+                if isinstance(intent, NavigateIntent):
+                    print("Navigating to:", intent.url)
+                    try:
+                        path = await chat_navigate(page, intent.url, prefix)
+                        print("Screenshot (done):", path)
+                    except Exception as e:
+                        err_msg = str(e).lower()
+                        if "err_name_not_resolved" in err_msg or "net::" in err_msg:
+                            print("Could not reach that URL (domain may not exist or resolve). Try another URL or say 'search XXX' to use Google.")
+                        else:
+                            print("Navigation error:", e)
+                        path = None
+                elif isinstance(intent, GoBackIntent):
+                    print("Going back…")
+                    path = await chat_go_back(page, prefix)
+                    print("Screenshot (done):", path)
+                elif isinstance(intent, SearchOnPageIntent):
+                    # If we haven't loaded any page yet, go to Google first
+                    if page.url == "about:blank" or "about:" in page.url:
+                        await chat_navigate(page, "https://www.google.com", f"{prefix}_open")
+                    print("Searching:", intent.query)
+                    redbox_path, done_path = await chat_search_on_page(page, intent.query, prefix)
+                    if redbox_path:
+                        print("Screenshot (red box):", redbox_path)
+                    print("Screenshot (done):", done_path)
+                elif isinstance(intent, ClosePopupIntent):
+                    print("Closing popup…")
+                    path = await chat_close_popup(page, prefix)
+                    print("Screenshot (done):", path)
+                elif isinstance(intent, CloseSearchIntent):
+                    print("Closing search box…")
+                    path = await chat_close_search(page, prefix)
+                    print("Screenshot (done):", path)
+                elif isinstance(intent, CookieConsentIntent):
+                    print("Accepting cookies…" if intent.accept else "Declining cookies…")
+                    path = await chat_cookie_consent(page, intent.accept, prefix)
+                    print("Screenshot (done):", path)
+                elif isinstance(intent, HoverIntent):
+                    print("Hover:", intent.description)
+                    redbox_path, path = await chat_hover_by_description(page, intent.description, prefix)
+                    if redbox_path:
+                        print("Screenshot (red box):", redbox_path)
+                    if path and path != redbox_path:
+                        print("Screenshot (done):", path)
+                elif isinstance(intent, ClickIntent):
+                    redbox_path, path = await chat_click(
+                        page,
+                        intent.selector,
+                        intent.nth_link,
+                        intent.nth_result,
+                        intent.link_text,
+                        intent.description,
+                        prefix,
+                    )
+                    if redbox_path:
+                        print("Screenshot (red box):", redbox_path)
+                    print("Screenshot (done):", path)
+                else:
+                    print("Unknown intent. Please try again.")
+                prompt = ""
+                print()
+        finally:
+            await page.close()
+            await context.close()
+            await browser.close()
 
 
 def run_benchmark_doc(report_path: str | None, out_path: str | None) -> None:
@@ -218,6 +376,9 @@ def main():
             getattr(args, "out", None),
         )
 
+    elif args.command == "run-nl":
+        asyncio.run(run_nl_chat(getattr(args, "prompt", "")))
+
     elif args.command == "run-action":
         asyncio.run(run_demo_action(
             args.url,
@@ -226,6 +387,7 @@ def main():
             getattr(args, "fill_value", None),
             submit_after_fill=getattr(args, "submit", False),
             open_search_selector=getattr(args, "open_search", None),
+            headful=getattr(args, "headful", False),
         ))
 
 if __name__ == "__main__":

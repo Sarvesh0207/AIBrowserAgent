@@ -53,10 +53,13 @@ def parse_prompt_to_url(prompt: str) -> str:
 
     client = Anthropic()
     system = (
-        "You extract exactly one URL from the user's message. "
-        "The user wants to browse a webpage. Return only the URL, nothing else. "
-        "If they mention a site name (e.g. example, wikipedia, stanley), use the common official URL (e.g. https://example.com, https://www.wikipedia.org). "
-        "If the message contains a URL, return that URL. No explanation, no markdown, no quotes."
+        "You extract exactly one URL from the user's message. Return ONLY the URL, nothing else. No explanation, no markdown, no quotes, no sentences like 'I cannot extract'. "
+        "If the user provides a full URL, return it as-is. "
+        "Otherwise return the most likely website URL. For abbreviations or acronyms (e.g. CCCIS, UIC): use .edu for schools/universities, .org for organizations, .com otherwise. "
+        "Examples: Stanley -> https://www.stanley1913.com ; Stanley Tools -> https://www.stanley.com ; "
+        "Apple -> https://www.apple.com ; IKEA -> https://www.ikea.com ; "
+        "UIC (university) -> https://www.uic.edu ; CCCIS (if school) -> https://www.cccis.edu or https://cccis.edu ; "
+        "Unknown acronym -> https://www.<lowercase>.com . Never output an error message; always output a valid URL."
     )
     msg = client.messages.create(
         model=ANTHROPIC_MODEL,
@@ -73,7 +76,28 @@ def parse_prompt_to_url(prompt: str) -> str:
     # Clean common LLM artifacts
     raw = raw.strip('"\'`').split("\n")[0].strip()
     if not raw:
-        raise ValueError("Could not extract URL from prompt")
-    if not raw.startswith("http"):
-        raw = "https://" + raw.lstrip("/")
-    return raw
+        raw = ""
+
+    # Reject LLM error messages (e.g. "I cannot extract a URL from...") being used as URL
+    def _looks_like_valid_domain(s: str) -> bool:
+        if not s or len(s) > 250 or " " in s:
+            return False
+        s_lower = s.lower()
+        if "cannot" in s_lower or "please" in s_lower or "provide" in s_lower or "extract" in s_lower:
+            return False
+        # Should look like a host: has a dot or is a known short TLD path
+        if s.startswith("http"):
+            return True
+        return "." in s or len(s) <= 15
+
+    if raw and _looks_like_valid_domain(raw):
+        if not raw.startswith("http"):
+            raw = "https://" + raw.lstrip("/")
+        return raw
+
+    # Fallback: use the user's prompt as a domain (e.g. "cccis" -> https://www.cccis.com)
+    slug = re.sub(r"[^\w.-]", "", (prompt or "").strip().lower())
+    slug = slug[:64].strip(".-")
+    if slug:
+        return f"https://www.{slug}.com"
+    raise ValueError("Could not extract URL from prompt. Try providing a full URL or a clearer site name.")
