@@ -47,4 +47,3 @@ python main.py run-action --url https://www.stanley1913.com --fill "input[placeh
   1. **Git:** Push only the repo (`.env` is in `.gitignore`, so it is not pushed). Teammates clone and add their own `.env` from `.env.example`.  
   2. **Zip:** Before zipping, delete or move `.env` out of the project folder (or exclude it when creating the archive). Share `.env.example` only; each person copies it to `.env` and fills in their own keys.
 - Teammates: copy `.env.example` to `.env` and add your `ANTHROPIC_API_KEY` (and any other keys). Never commit or share `.env`.
-<!-- refresh contributors -->
