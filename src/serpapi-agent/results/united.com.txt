@@ -1,0 +1,14 @@
+
+══════════════════════════════════════════════════════════════
+  📊  SERPAPI SEARCH API — METRICS
+══════════════════════════════════════════════════════════════
+  URL               : http://united.com/
+──────────────────────────────────────────────────────────────
+  Title             : United Airlines
+  Description       : Find the latest travel deals on flights, hotels and rental cars. Book airline tickets and MileagePlus award tickets to worldwide destinations.
+──────────────────────────────────────────────────────────────
+  Title Fetched     : ✅  Yes
+  Desc Fetched      : ✅  Yes
+  Response Time     : 0.062s
+  Rate Limit Hit    : ❌  No
+══════════════════════════════════════════════════════════════

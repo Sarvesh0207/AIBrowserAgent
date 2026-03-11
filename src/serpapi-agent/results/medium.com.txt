@@ -1,0 +1,14 @@
+
+══════════════════════════════════════════════════════════════
+  📊  SERPAPI SEARCH API — METRICS
+══════════════════════════════════════════════════════════════
+  URL               : http://medium.com/
+──────────────────────────────────────────────────────────────
+  Title             : Medium: Read and write stories.
+  Description       : On Medium, anyone can share insightful perspectives, useful knowledge, and life wisdom with the world.
+──────────────────────────────────────────────────────────────
+  Title Fetched     : ✅  Yes
+  Desc Fetched      : ✅  Yes
+  Response Time     : 2.936s
+  Rate Limit Hit    : ❌  No
+══════════════════════════════════════════════════════════════

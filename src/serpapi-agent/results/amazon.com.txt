@@ -1,0 +1,14 @@
+
+══════════════════════════════════════════════════════════════
+  📊  SERPAPI SEARCH API — METRICS
+══════════════════════════════════════════════════════════════
+  URL               : http://amazon.com/
+──────────────────────────────────────────────────────────────
+  Title             : Amazon.com. Spend less. Smile more.
+  Description       : Free shipping on millions of items. Get the best of Shopping and Entertainment with Prime. Enjoy low prices and great deals on the largest selection of ...
+──────────────────────────────────────────────────────────────
+  Title Fetched     : ✅  Yes
+  Desc Fetched      : ✅  Yes
+  Response Time     : 0.061s
+  Rate Limit Hit    : ❌  No
+══════════════════════════════════════════════════════════════

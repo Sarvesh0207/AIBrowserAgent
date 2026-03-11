@@ -1,0 +1,14 @@
+
+══════════════════════════════════════════════════════════════
+  📊  SERPAPI SEARCH API — METRICS
+══════════════════════════════════════════════════════════════
+  URL               : http://zillow.com/
+──────────────────────────────────────────────────────────────
+  Title             : Zillow: Real Estate, Apartments, Mortgages & Home Values
+  Description       : The leading real estate marketplace. Search millions of for-sale and rental listings, compare Zestimate® home values and connect with local professionals.
+──────────────────────────────────────────────────────────────
+  Title Fetched     : ✅  Yes
+  Desc Fetched      : ✅  Yes
+  Response Time     : 1.845s
+  Rate Limit Hit    : ❌  No
+══════════════════════════════════════════════════════════════

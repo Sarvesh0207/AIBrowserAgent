@@ -1,0 +1,14 @@
+
+══════════════════════════════════════════════════════════════
+  📊  SERPAPI SEARCH API — METRICS
+══════════════════════════════════════════════════════════════
+  URL               : http://learning.postman.com/
+──────────────────────────────────────────────────────────────
+  Title             : Postman Docs | Postman Docs
+  Description       : Learn the Postman fundamentals in this video course for beginners. Send and authorize a request, write test scripts, and chain requests together.
+──────────────────────────────────────────────────────────────
+  Title Fetched     : ✅  Yes
+  Desc Fetched      : ✅  Yes
+  Response Time     : 1.631s
+  Rate Limit Hit    : ❌  No
+══════════════════════════════════════════════════════════════

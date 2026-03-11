@@ -1,0 +1,14 @@
+
+══════════════════════════════════════════════════════════════
+  📊  SERPAPI SEARCH API — METRICS
+══════════════════════════════════════════════════════════════
+  URL               : http://python.org/
+──────────────────────────────────────────────────────────────
+  Title             : Welcome to Python.org
+  Description       : Python is a programming language that lets you work quickly and integrate systems more effectively. Learn More
+──────────────────────────────────────────────────────────────
+  Title Fetched     : ✅  Yes
+  Desc Fetched      : ✅  Yes
+  Response Time     : 1.002s
+  Rate Limit Hit    : ❌  No
+══════════════════════════════════════════════════════════════

@@ -1,0 +1,14 @@
+
+══════════════════════════════════════════════════════════════
+  📊  SERPAPI SEARCH API — METRICS
+══════════════════════════════════════════════════════════════
+  URL               : http://arxiv.org/
+──────────────────────────────────────────────────────────────
+  Title             : arXiv.org e-Print archive
+  Description       : arXiv is a free distribution service and an open-access archive for nearly 2.4 million scholarly articles in the fields of physics, mathematics, computer ...
+──────────────────────────────────────────────────────────────
+  Title Fetched     : ✅  Yes
+  Desc Fetched      : ✅  Yes
+  Response Time     : 0.123s
+  Rate Limit Hit    : ❌  No
+══════════════════════════════════════════════════════════════

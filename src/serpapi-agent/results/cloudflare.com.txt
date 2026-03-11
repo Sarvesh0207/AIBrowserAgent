@@ -1,0 +1,14 @@
+
+══════════════════════════════════════════════════════════════
+  📊  SERPAPI SEARCH API — METRICS
+══════════════════════════════════════════════════════════════
+  URL               : http://cloudflare.com/
+──────────────────────────────────────────────────────────────
+  Title             : Cloudflare: Connect, protect, and build everywhere
+  Description       : Connect your people, AI agents, apps, and networks · Protect and accelerate websites and AI-enabled apps · Build and secure AI agents.
+──────────────────────────────────────────────────────────────
+  Title Fetched     : ✅  Yes
+  Desc Fetched      : ✅  Yes
+  Response Time     : 1.318s
+  Rate Limit Hit    : ❌  No
+══════════════════════════════════════════════════════════════
