@@ -1,0 +1,8 @@
+# LangGraph orchestration
+langgraph>=0.2.0
+
+# Tavily Search client
+tavily-python>=0.5.0
+
+# Environment variables
+python-dotenv>=1.0.0

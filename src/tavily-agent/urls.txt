@@ -1,0 +1,19 @@
+# Add one URL per line (10 total for your experiment).
+# You can include or omit "https://"; it will be added automatically when missing.
+my.uic.edu
+united.com
+learning.postman.com
+amazon.com
+zillow.com
+news.ycombinator.com
+twitter.com/explore
+airbnb.com
+cnn.com
+python.org
+wikipedia.org
+stackoverflow.com
+nasa.gov
+arxiv.org
+medium.com
+cloudflare.com
+ebay.com
