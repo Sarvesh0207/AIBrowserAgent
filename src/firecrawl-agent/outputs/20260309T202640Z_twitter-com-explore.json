@@ -1,0 +1,15 @@
+{
+  "url": "http://twitter.com/explore",
+  "title": null,
+  "description": null,
+  "summary": null,
+  "markdown_preview": null,
+  "response_time_ms": 1172.1070999992662,
+  "response_time_s": 1.1721070999992662,
+  "timeout_ms_soft": 60000,
+  "timeout_exceeded": false,
+  "screenshot_url": null,
+  "screenshot_path": null,
+  "error": "WebsiteNotSupportedError: Website Not Supported: Failed to scrape. We apologize for the inconvenience but we do not support this site. If you are part of an enterprise and want to have a further conversation about this, please fill out our intake form here: https://fk4bvu0n5qp.typeform.com/to/Ej6oydlg - No additional error details provided.",
+  "raw_metadata": null
+}

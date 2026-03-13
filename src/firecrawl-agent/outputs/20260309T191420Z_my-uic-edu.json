@@ -1,0 +1,13 @@
+{
+  "url": "http://my.uic.edu/",
+  "title": null,
+  "description": null,
+  "markdown_preview": null,
+  "response_time_ms": 12206.272599998556,
+  "timeout_ms_soft": 60000,
+  "timeout_exceeded": false,
+  "screenshot_url": null,
+  "screenshot_path": null,
+  "error": "AttributeError: 'DocumentMetadata' object has no attribute 'get'",
+  "raw_metadata": null
+}
