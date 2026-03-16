@@ -1,0 +1,13 @@
+# LangGraph orchestration
+langgraph>=0.2.0
+
+# LangChain + Claude for natural language parsing
+langchain>=0.3.0
+langchain-core>=0.3.0
+langchain-anthropic>=0.3.0
+
+# Brave Search HTTP client
+requests>=2.31.0
+
+# Environment variables
+python-dotenv>=1.0.0
