@@ -1,49 +1,154 @@
-# AIBrowserAgent
-The objective of this project is to design and implement a structured AI agent that can interpret natural language instructions, launch a browser session, and execute step-by-step actions while explaining its reasoning to accomplish a given tasks.
+# 🌐 WebAgent — AI Browser with SoM + Human-in-the-Loop
 
-## Requirements
+A terminal-based AI web browsing agent powered by **LangGraph**, **Claude Sonnet**, and **Playwright**. Inspired by the WebVoyager paper's **Set-of-Mark (SoM)** approach for grounded, accurate web interaction.
 
-- Python 3.11+ (3.11 or 3.12 recommended)
-- pip and a virtual environment (e.g. `venv` or `conda`)
+---
 
-## Natural language entry (--prompt / run-hitl)
+## Architecture
 
-You can give a **sentence** instead of a raw URL; the agent uses an LLM to resolve it to a URL, then browses and summarizes.
-
-**Command line (--prompt):**
-```bash
-python main.py run --prompt "Visit example.com and summarize"
-python main.py run --prompt "Go to Wikipedia and summarize"
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        main.py (Terminal UI)                    │
+│   Rich-powered REPL  ·  interrupt handler  ·  screenshot paths  │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │ HumanMessage
+                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    LangGraph StateGraph                         │
+│                                                                 │
+│   ┌──────────┐  tool_calls   ┌──────────┐                      │
+│   │  agent   │──────────────▶│  tools   │                      │
+│   │  (LLM)   │◀──────────────│  node    │                      │
+│   └──────────┘  ToolMessages └────┬─────┘                      │
+│        │                          │                            │
+│        │                    interrupt() ──▶ Human input        │
+│        ▼                                                        │
+│      END                                                        │
+│                                                                 │
+│  MemorySaver checkpointer → full multi-turn history            │
+└──────────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     agent.py (Tools)                            │
+│                                                                 │
+│  navigate_to_url      → go to URL, return PageState            │
+│  capture_current_page → screenshot + SoM                       │
+│  click_element(n)     → click element by SoM index             │
+│  type_text(n, text)   → type into input #n                     │
+│  select_dropdown(n)   → choose dropdown option                 │
+│  press_keyboard_key   → Enter, Tab, Escape, etc.               │
+│  scroll_page          → up/down                                │
+│  go_back              → browser back                           │
+│  ask_human(question)  → LangGraph interrupt() → user input     │
+└──────────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                  browser_tools.py (Playwright)                  │
+│                                                                 │
+│  BrowserController                                              │
+│   ├── navigate()          → page.goto()                        │
+│   ├── capture_state()     → screenshot + element extraction    │
+│   ├── _extract_elements() → JS querySelectorAll → ElementInfo  │
+│   └── _draw_som()         → PIL bounding box overlay           │
+│                                                                 │
+│  SoM Color Legend                                               │
+│   🔵 Blue   = Links         🟢 Green  = Buttons               │
+│   🟡 Amber  = Input fields  🟣 Purple = Dropdowns             │
+│   🔴 Red    = Text areas    ⚫ Grey   = Other interactive      │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-**Interactive (run-hitl):** When asked "What would you like me to do?", you can type either a URL or natural language (e.g. "visit Stanley's website").
-- If the input looks like a URL, it is used as-is.
-- Otherwise, the LLM extracts a URL from your sentence and the agent visits that URL.
+## File Structure
 
-## Headless click / fill (run-action)
-
-In headless mode, you can run **one** click or one form fill and confirm the result (screenshot + log):
-
-```bash
-# Click the first link on the page
-python main.py run-action --url https://example.com --click "a"
-
-# Fill an input (e.g. search box) and confirm
-python main.py run-action --url https://example.com --fill "input[name=q]" --fill-value "hello"
-
-# Fill search box and actually submit (press Enter) to go to search results
-python main.py run-action --url https://www.stanley1913.com --fill "input[placeholder*='looking for']" --fill-value "water bottle" --submit
+```
+webagent/
+├── main.py            # Terminal entry point (Rich REPL)
+├── agent.py           # LangGraph graph + tools + system prompt
+├── browser_tools.py   # Playwright controller + SoM screenshot engine
+├── pyproject.toml     # Python package + dependencies
+├── setup.sh           # One-command bootstrap
+├── .env.example       # Environment variable template
+├── .env               # Your API keys (git-ignored)
+└── screenshots/       # Auto-created, stores all screenshots
 ```
 
-- **--click** and **--fill** / **--fill-value** are mutually exclusive; use exactly one.
-- **--submit**: use only with **--fill**; after filling, press Enter to submit (e.g. search). Screenshot is taken after the page navigates.
-- Selectors are CSS selectors (e.g. `a`, `button.submit`, `input#search`).
-- Result: screenshot under `outputs/screenshots/`, action log under `outputs/logs/action_*.jsonl`, and a printed confirmation (success/failure, and whether search was submitted).
+## Setup
 
-## Sharing the project (avoid leaking API keys)
+```bash
+# Clone / enter the directory
+cd webagent
 
-- **Do not** zip or share the folder if it contains a `.env` file — that file holds your API keys and would be leaked.
-- **Safe options:**  
-  1. **Git:** Push only the repo (`.env` is in `.gitignore`, so it is not pushed). Teammates clone and add their own `.env` from `.env.example`.  
-  2. **Zip:** Before zipping, delete or move `.env` out of the project folder (or exclude it when creating the archive). Share `.env.example` only; each person copies it to `.env` and fills in their own keys.
-- Teammates: copy `.env.example` to `.env` and add your `ANTHROPIC_API_KEY` (and any other keys). Never commit or share `.env`.
+# One-command setup (creates venv, installs deps, installs Chromium)
+chmod +x setup.sh && ./setup.sh
+
+# Add your API key to .env
+echo "ANTHROPIC_API_KEY=sk-ant-..." >> .env
+
+# Run
+source .venv/bin/activate
+python main.py
+```
+
+## Usage Examples
+
+```bash
+# Start with a URL
+python main.py --url https://google.com
+
+# Headless (no browser window)
+python main.py --headless
+
+# Interactive (browser window opens)
+python main.py
+```
+
+### Natural Language Instructions
+
+The agent understands natural language, just like ChatGPT or Claude:
+
+```
+You: go to wikipedia and search for the James Webb telescope
+You: click the first search result
+You: scroll down and find the launch date section
+You: go to amazon.com and search for mechanical keyboards under $100
+You: I want to book a flight from Chicago to Tokyo in December
+```
+
+### Human-in-the-Loop Scenarios
+
+The agent will **pause and ask you** in these situations:
+
+| Scenario | Example question |
+|---|---|
+| Dropdown with multiple options | "I see a dropdown #5 with: [Economy, Business, First Class]. Which would you like?" |
+| Vague instruction | "Could you clarify — what exactly should I do on this page?" |
+| Destructive action | "I'm about to submit this form. Confirm? (yes/no)" |
+| Credentials needed | "This page requires a login. Please provide your username." |
+
+## Set-of-Mark (SoM) Screenshots
+
+Every page capture produces **two screenshots**:
+
+1. **`_clean.png`** — Raw screenshot, no overlays
+2. **`_som.png`** — Annotated with numbered bounding boxes
+
+The SoM approach (from the WebVoyager paper) assigns each interactive element a visible number. The agent references these numbers when deciding what to click, instead of fragile CSS selectors. This makes the agent much more robust to DOM structure changes.
+
+```
+Element #7 [button]: "Add to Cart"    ← agent clicks by number
+Element #12 [input]: placeholder="Search"
+Element #23 [select]: options=["USD", "EUR", "GBP"]  ← triggers ask_human
+```
+
+## Key Design Decisions
+
+**Why `interrupt()` instead of a custom tool loop?**  
+LangGraph's `interrupt()` fully suspends graph execution and preserves state in the checkpointer. When the human answers, the graph resumes exactly where it left off — no state is lost, the full message history is intact.
+
+**Why PIL for SoM instead of canvas/JS?**  
+PIL operates on the final PNG, meaning the overlays are always pixel-perfect regardless of CSS transforms, z-index stacking, or scroll position. JavaScript canvas overlays can be clipped or occluded by the page's own elements.
+
+**Why headed mode by default?**  
+Many modern sites detect headless browsers and block them (Cloudflare, etc.). Headed mode with a realistic user-agent string gets much better site compatibility.
