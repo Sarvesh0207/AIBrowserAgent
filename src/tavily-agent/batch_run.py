@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 from typing import List
 
-from agent import build_agent, AgentState, print_metrics
+from nl_agent import search_with_instruction
 
 
 PROJECT_ROOT = Path(__file__).parent
@@ -20,74 +20,46 @@ def load_urls(path: Path) -> List[str]:
         line = line.strip()
         if not line or line.startswith("#"):
             continue
-        if not line.startswith("http"):
-            line = "https://" + line
         urls.append(line)
     return urls
-
-
-def run_once(agent, url: str) -> AgentState:
-    initial: AgentState = {
-        "url":              url,
-        "title":            "",
-        "description":      "",
-        "title_fetched":    False,
-        "desc_fetched":     False,
-        "response_time":    None,
-        "rate_limit_hit":   False,
-        "raw_result":       {},
-        "result_accuracy":  0,
-        "metadata_quality": 0,
-        "accuracy_reason":  "",
-        "quality_reason":   "",
-        "error":            "",
-    }
-    final = agent.invoke(initial)
-    print_metrics(final)
-    return final
 
 
 def main():
     urls = load_urls(URLS_FILE)
     if not urls:
         print(f"No URLs found in {URLS_FILE}.")
-        print("Add one URL per line (you can omit 'https://').")
+        print("Add one instruction/query per line.")
         sys.exit(1)
-
-    agent = build_agent()
 
     with OUTPUT_CSV.open("w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(
             [
-                "url",
-                "title",
-                "description",
-                "title_fetched",
-                "description_fetched",
+                "instruction",
+                "query",
+                "search_depth",
+                "max_results",
+                "start_date",
+                "end_date",
                 "response_time_s",
-                "result_accuracy",
-                "metadata_quality",
-                "rate_limit_hit",
-                "error",
+                "result_count",
             ]
         )
 
-        for url in urls:
-            print(f"\n=== Running Tavily agent for: {url} ===")
-            state = run_once(agent, url)
+        for instruction in urls:
+            print(f"\n=== Running Tavily search for: {instruction} ===")
+            payload = search_with_instruction(instruction)
+            parsed = payload["parsed"]
             writer.writerow(
                 [
-                    state["url"],
-                    state["title"],
-                    state["description"],
-                    "Yes" if state["title_fetched"] else "No",
-                    "Yes" if state["desc_fetched"] else "No",
-                    state["response_time"] or "",
-                    state["result_accuracy"],
-                    state["metadata_quality"],
-                    "Yes" if state["rate_limit_hit"] else "No",
-                    state.get("error", ""),
+                    payload["instruction"],
+                    parsed["query"],
+                    parsed["search_depth"],
+                    parsed["max_results"],
+                    parsed["start_date"] or "",
+                    parsed["end_date"] or "",
+                    payload["response_time_s"],
+                    payload["result_count"],
                 ]
             )
 
