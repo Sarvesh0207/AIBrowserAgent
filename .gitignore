@@ -1,5 +1,6 @@
 # secrets
 .env
+.env.*.local
 
 # python
 __pycache__/
@@ -7,13 +8,19 @@ __pycache__/
 .venv/
 venv/
 
-# outputs (keep folders via .gitkeep)
+# outputs (keep folders via .gitkeep if used)
+outputs/
 outputs/logs/*
 outputs/screenshots/*
 outputs/reports/*
 !outputs/**/.gitkeep
 
+# standalone agent folders (this project)
+screenshots/
+screenshots_live/
+
 # editor/os
 .vscode/
 .idea/
 .DS_Store
+Thumbs.db

@@ -47,3 +47,37 @@ python main.py run-action --url https://www.stanley1913.com --fill "input[placeh
   1. **Git:** Push only the repo (`.env` is in `.gitignore`, so it is not pushed). Teammates clone and add their own `.env` from `.env.example`.  
   2. **Zip:** Before zipping, delete or move `.env` out of the project folder (or exclude it when creating the archive). Share `.env.example` only; each person copies it to `.env` and fills in their own keys.
 - Teammates: copy `.env.example` to `.env` and add your `ANTHROPIC_API_KEY` (and any other keys). Never commit or share `.env`.
+
+---
+
+## Firecrawl + LangGraph agent (this branch)
+
+This branch includes a Firecrawl/LangGraph-based agent that:
+
+- Accepts a **natural-language instruction**
+- Runs **web search with date ranges** (Firecrawl `tbs`, including `cdr:1,cd_min:MM/DD/YYYY,cd_max:MM/DD/YYYY`)
+- Opens the chosen result in a **live Playwright browser** and takes screenshots
+- Can keep the browser open for multiple tasks (`--interactive`)
+
+### Setup
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+python -m playwright install
+copy .env.example .env
+```
+
+Set at least:
+
+```
+FIRECRAWL_API_KEY=fc-...
+ANTHROPIC_API_KEY=...
+```
+
+### Run (demo)
+
+```bash
+python run.py --instruction "Find recent LangGraph tutorials" --live --interactive
+```
