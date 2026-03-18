@@ -1,0 +1,4 @@
+exa-py
+python-dotenv
+langgraph
+requests
