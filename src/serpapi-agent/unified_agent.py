@@ -1,10 +1,10 @@
 """
-Unified HITL agent for SerpAPI + browser.
+Unified SerpAPI agent (LLM parsing + SerpAPI calls).
 
-Single entrypoint where the user can type:
-- a plain URL             → open in browser, summarize the page
-- a search-style query    → natural-language SerpAPI search with time range
-- a request about a URL   → open that page and show title/summary
+This version removes all browser automation (Playwright). It supports:
+- a plain URL            → SerpAPI URL->metadata (title + snippet)
+- a search-style query  → LLM parses instruction, then SerpAPI searches
+- a request about a URL → resolves the URL and shows title/snippet
 
 Run:
     python unified_agent.py
@@ -16,7 +16,9 @@ import re
 from dataclasses import dataclass
 from typing import Literal, Optional
 
-from browser_agent import AgentState, build_graph
+from agent import AgentState as UrlAgentState
+from agent import build_agent as build_url_agent
+from agent import print_metrics as print_url_metrics
 from nl_agent import run as run_search, search_top_url
 
 
@@ -76,47 +78,33 @@ def parse_intent(message: str, current_url: Optional[str] = None) -> Intent:
     return Intent(kind="search", url=None, text=msg)
 
 
-def _browse_basic(url: str) -> None:
-    """Open URL and show basic metadata (URL + title + screenshot path)."""
-    print(f"\n[Browser] Visiting: {url}")
-    app = build_graph()
-    final: AgentState = app.invoke({"url": url})  # type: ignore[assignment]
+def _url_browse(url: str) -> None:
+    """
+    URL -> metadata using the SerpAPI URL agent.
 
-    title = final.get("title") or "(no title)"
-    screenshot = final.get("screenshot_path") or "(no screenshot)"
-
-    print("\n════════════════════════════════════════════════════")
-    print("  🌐  PAGE METADATA")
-    print("════════════════════════════════════════════════════")
-    print(f"  URL     : {url}")
-    print(f"  Title   : {title}")
-    print(f"  Screenshot path: {screenshot}")
-    print("════════════════════════════════════════════════════\n")
-
-
-def _browse_with_summary(url: str) -> None:
-    """Open URL and show title + short summary (for 'page_summary' intents)."""
-    print(f"\n[Browser] Visiting (summary requested): {url}")
-    app = build_graph()
-    final: AgentState = app.invoke({"url": url})  # type: ignore[assignment]
-
-    title = final.get("title") or "(no title)"
-    summary = final.get("summary") or "(no summary)"
-    screenshot = final.get("screenshot_path") or "(no screenshot)"
-
-    print("\n════════════════════════════════════════════════════")
-    print("  🌐  PAGE SUMMARY")
-    print("════════════════════════════════════════════════════")
-    print(f"  URL     : {url}")
-    print(f"  Title   : {title}")
-    print(f"  Summary : {summary}")
-    print(f"  Screenshot path: {screenshot}")
-    print("════════════════════════════════════════════════════\n")
+    Note: This path does not use an additional LLM step; the snippet/description
+    comes directly from SerpAPI's organic result.
+    """
+    print(f"\n[SerpAPI] Resolving metadata for: {url}")
+    app = build_url_agent()
+    initial: UrlAgentState = {
+        "url": url,
+        "title": "",
+        "description": "",
+        "title_fetched": False,
+        "desc_fetched": False,
+        "response_time": None,
+        "rate_limit_hit": False,
+        "raw_result": {},
+        "error": "",
+    }
+    final = app.invoke(initial)  # type: ignore[arg-type]
+    print_url_metrics(final, save_to_results=True)
 
 
 def main() -> None:
     print(
-        "\nUnified SerpAPI Agent (HITL)\n"
+        "\nUnified SerpAPI Agent (LLM + SerpAPI)\n"
         "You can type:\n"
         "  - a URL (e.g. https://www.uic.edu/)\n"
         "  - a search query (e.g. Python tutorials published in 2024 top 10)\n"
@@ -140,12 +128,12 @@ def main() -> None:
 
         if intent.kind == "url_browse" and intent.url:
             current_url = intent.url
-            _browse_basic(intent.url)
+            _url_browse(intent.url)
             continue
 
         if intent.kind == "page_summary" and intent.url:
             current_url = intent.url
-            _browse_with_summary(intent.url)
+            _url_browse(intent.url)
             continue
 
         if intent.kind == "go_to":
@@ -162,7 +150,7 @@ def main() -> None:
                 print("Could not resolve a destination URL from that instruction.")
             else:
                 current_url = url
-                _browse_basic(url)
+                _url_browse(url)
             continue
 
         # Default: treat as natural-language search instruction.

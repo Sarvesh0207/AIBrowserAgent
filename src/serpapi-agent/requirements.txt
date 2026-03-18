@@ -6,6 +6,3 @@ langgraph>=0.2.0
 langchain>=0.3.0
 langchain-core>=0.3.0
 langchain-anthropic>=0.3.0
-
-# Browser automation (HEADLESS / headed)
-playwright>=1.49.0

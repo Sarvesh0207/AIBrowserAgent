@@ -4,7 +4,7 @@ This folder contains two small agents built on top of [SerpAPI](https://serpapi.
 
 - `agent.py` — **URL → metadata**: given a website URL, fetch the first organic result and display basic metrics.
 - `nl_agent.py` — **natural language → search results**: accepts a natural language instruction, parses time range constraints with an LLM, and runs a SerpAPI search (similar to the Brave Search agent).
-- `browser.py` + `agent_graph.py` — **Browser agent (HEADLESS / HITL)**: open a real browser with Playwright, summarize a page, and support a simple human-in-the-loop flow.
+- `unified_agent.py` — **interactive CLI**: LLM parsing + SerpAPI for URL metadata and search.
 
 ## 1. URL → Metadata (`agent.py`)
 
@@ -107,78 +107,13 @@ SerpAPI/
 ├── requirements.txt    # Python dependencies
 ├── agent.py            # Single-URL agent (URL -> metadata)
 ├── nl_agent.py         # Natural-language agent (instruction -> search results)
+├── unified_agent.py    # Interactive CLI (LLM parsing + SerpAPI)
 ├── batch_run.py        # Batch runner (reads urls.txt, writes CSV + txt)
 ├── urls.txt            # Optional: one URL per line for batch runs
 ├── .env                # API keys (SERPAPI_API_KEY, ANTHROPIC_API_KEY)
 └── results/            # Output folder
     ├── results.csv    # Batch summary (from batch_run.py)
     └── *.txt          # One report per URL (e.g. example_com.txt)
-```
-
-## 3. Browser agent: HEADLESS & HITL
-
-Beyond the pure-API agents, there is also a **browser-based agent** that
-uses Playwright (Chromium) to open real web pages, take screenshots, and
-summarize them. This is inspired by the Tavily browser agent.
-
-### HEADLESS configuration
-
-- Set `HEADLESS` in `.env` or environment variables:
-  - `HEADLESS=true` / `HEADLESS=1` / `HEADLESS=yes` → run **without** a visible browser window.
-  - Anything else (or unset) → run in **headed** mode (you see the browser).
-- Other optional settings (with defaults) are defined in `config.py`:
-  - `BROWSER_TIMEOUT_MS` (default `30000`)
-  - `OUTPUT_DIR` (default `outputs/`)
-    - `outputs/screenshots/` — screenshots
-    - `outputs/reports/` — headless evaluation reports
-
-### One-shot browse + summarize
-
-You can use the graph in `agent_graph.py` for a single URL:
-
-```bash
-python -c "from agent_graph import build_graph; print(build_graph().invoke({'url': 'https://www.example.com'})['summary'])"
-```
-
-### Headless evaluation over many URLs
-
-Use `headless_eval.py` to test how well pages load in headless mode:
-
-```bash
-# urls.txt: one URL per line (you can omit https://)
-python headless_eval.py urls.txt
-```
-
-This writes a CSV report under `outputs/reports/headless_report.csv` with:
-
-- `url` / `final_url`
-- `title`
-- `description_len`
-- `works_in_headless` (Yes/No)
-- `error`
-- `screenshot_path`
-
-### HITL (human-in-the-loop) browser session
-
-`run_hitl.py` starts an interactive session in the terminal:
-
-```bash
-python run_hitl.py
-```
-
-Flow:
-
-1. Agent asks you for a URL.
-2. It opens the page in the browser (headless or headed).
-3. It summarizes the page.
-4. It asks if you have follow-up questions; you can:
-   - Enter a question (agent answers based only on the page content).
-   - Press Enter to finish.
-
-You can optionally pass a custom thread id to resume a session:
-
-```bash
-python run_hitl.py my-thread-id
 ```
 
 ## Requirements
